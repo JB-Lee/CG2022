@@ -42,6 +42,8 @@ def drawPoint(pt, color='GREEN', thick=3):
 
 #HW2 implement drawLine with drawPoint
 def drawLine(pt0, pt1, color='GREEN', thick=3):
+    ## Native Implement
+    """
     steps = 1e-2
     a1 = 0
 
@@ -53,7 +55,17 @@ def drawLine(pt0, pt1, color='GREEN', thick=3):
             thick
         )
         a1 += steps
-    
+    """
+    ## Numpy Implement
+    A = np.array([pt0, pt1]).T
+    a = np.linspace((0, 1), (1, 0)).T
+
+    XY = np.dot(A, a).T
+
+    for x, y in XY:
+        drawPoint((x, y), color, thick)
+
+
 
 def drawPolylines(color='GREEN', thick=3):
     if(count < 2): return
