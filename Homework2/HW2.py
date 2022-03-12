@@ -42,7 +42,7 @@ def drawPoint(pt, color='GREEN', thick=3):
 
 #HW2 implement drawLine with drawPoint
 def drawLine(pt0, pt1, color='GREEN', thick=3):
-    ## Native Implement
+    ## Native Implementation
     """
     steps = 1e-2
     a1 = 0
@@ -56,7 +56,7 @@ def drawLine(pt0, pt1, color='GREEN', thick=3):
         )
         a1 += steps
     """
-    ## Numpy Implement
+    ## Numpy Implementation
     A = np.array([pt0, pt1]).T
     a = np.linspace((0, 1), (1, 0)).T
 
