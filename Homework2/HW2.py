@@ -60,7 +60,7 @@ def drawLine(pt0, pt1, color='GREEN', thick=3):
     A = np.array([pt0, pt1]).T
     a = np.linspace((0, 1), (1, 0), num=100).T # Generate a0 and a1, with constraint a0 + a1 = 1 and a0, a1 <= 1
 
-    XY = np.dot(A, a).T # Coords for points one the line between pt0 and pt1
+    XY = np.dot(A, a).T # Coords for points on the line between pt0 and pt1
 
     for x, y in XY:
         drawPoint((x, y), color, thick)
