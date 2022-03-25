@@ -127,6 +127,21 @@ def cartesian_to_barycentric(pt1, pt2, pt3, pt):
     return barycentric_coords
 
 
+def draw_cubic_bezier(points, color=BLUE, steps=100):
+    A = np.array(points)
+    M = np.array([[-1, 3, -3, 1],
+                  [3, -6, 3, 0],
+                  [-3, 3, 0, 0],
+                  [1, 0, 0, 0]])
+
+    t = np.arange(0, 1, 1 / steps)
+    t_arr = np.array([t**(3-i) for i in range(4)])
+
+    XY = t_arr.T @ M @ A
+
+    pygame.draw.lines(screen, color, False, XY)
+
+
 # Loop until the user clicks the close button.
 margin = 6
 
@@ -147,6 +162,9 @@ def main():
                 rm.drag_offset = (rect.x - event.pos[0], rect.y - event.pos[1])
                 break
         else:
+            if len(rm.rectangles) >= 4:
+                return
+
             rm.rectangles.append(
                 pygame.rect.Rect((event.pos[0] - margin, event.pos[1] - margin, 2 * margin, 2 * margin)))
 
@@ -203,12 +221,12 @@ def main():
                 pygame.draw.line(screen, GREEN, rm.rectangles[i - 1].center, rm.rectangles[i].center, 2)
 
         pygame.draw.rect(screen, (170, 170, 170), (0, 0, 300, 75))
-        draw_text(f'LagrangePolynomials : {len(rm.rectangles)}', RED, (10, 10))
+        draw_text(f'Points : {len(rm.rectangles)}', RED, (10, 10))
         draw_text(f'mouse x:{mouse_x} y:{mouse_y}', RED, (10, 30))
         draw_text(f'FPS :{clock.get_fps():.2f} index :{rm.indexing}', RED, (10, 50))
 
-        if len(rm.rectangles) > 1:
-            draw_lagrange_polylines([rect.center for rect in rm.rectangles])
+        if len(rm.rectangles) >= 4:
+            draw_cubic_bezier([rect.center for rect in rm.rectangles])
 
         # Go ahead and update the screen with what we've drawn.
         # This MUST happen after all the other drawing commands.
