@@ -4,6 +4,7 @@ Modified on Feb 20 2020
 """
 
 import itertools
+import functools
 from typing import List, Tuple
 
 import numpy as np
@@ -127,33 +128,67 @@ def cartesian_to_barycentric(pt1, pt2, pt3, pt):
     return barycentric_coords
 
 
-def draw_cubic_bezier(points, color=BLUE, steps=100):
-    A = np.array(points)
+###################################################################
+# HW 5 START
+###################################################################
+
+@functools.lru_cache()
+def get_cubic_bezier_matrix(steps):
+    """
+    Cache Matrix to improve performance
+    """
     M = np.array([[-1, 3, -3, 1],
                   [3, -6, 3, 0],
                   [-3, 3, 0, 0],
                   [1, 0, 0, 0]])
 
     t = np.arange(0, 1, 1 / steps)
-    t_arr = np.array([t**(3-i) for i in range(4)])
+    t_arr = np.array([t ** (3 - i) for i in range(4)])
 
-    XY = t_arr.T @ M @ A
+    return t_arr.T @ M
+
+
+def draw_cubic_bezier_vectorize(points, color=BLUE, steps=100):
+    """
+    Draw Cubic Bezier Curve with vector operation
+    """
+    A = np.array(points)
+    M = get_cubic_bezier_matrix(steps)
+
+    XY = M @ A
 
     pygame.draw.lines(screen, color, False, XY)
 
 
+def draw_cubic_bezier(points, color=BLUE, steps=100, thick=3):
+    """
+    Draw Cubic Bezier Curve
+    """
+    A = np.array(points)
+    pt0, pt1, pt2, pt3 = points
+
+    ox, oy = pt0
+
+    for t in np.arange(0, 1, 1 / steps):
+        x = (pt0[0] * (1 - t) ** 3) + (pt1[0] * 3 * t * (1 - t) ** 2) + (pt2[0] * 3 * t ** 2 * (1 - t)) + (
+                pt3[0] * t ** 3)
+        y = (pt0[1] * (1 - t) ** 3) + (pt1[1] * 3 * t * (1 - t) ** 2) + (pt2[1] * 3 * t ** 2 * (1 - t)) + (
+                pt3[1] * t ** 3)
+
+        pygame.draw.line(screen, color, (ox, oy), (x, y), thick)
+        ox, oy = x, y
+
+
+###################################################################
+# HW 5 END
+###################################################################
+
 # Loop until the user clicks the close button.
-margin = 6
-
-rm = RectManager()
-
-
-def is_clicked(curr_btn, prev_btn, btn_idx: int):
-    return curr_btn[btn_idx] and not prev_btn[btn_idx]
-
 
 def main():
     done = False
+    margin = 6
+    rm = RectManager()
 
     def handle_left_mouse_down(event):
         for idx, rect in enumerate(rm.rectangles):
@@ -226,7 +261,8 @@ def main():
         draw_text(f'FPS :{clock.get_fps():.2f} index :{rm.indexing}', RED, (10, 50))
 
         if len(rm.rectangles) >= 4:
-            draw_cubic_bezier([rect.center for rect in rm.rectangles])
+            # draw_cubic_bezier([rect.center for rect in rm.rectangles], steps=50000)
+            draw_cubic_bezier_vectorize([rect.center for rect in rm.rectangles], steps=5000)
 
         # Go ahead and update the screen with what we've drawn.
         # This MUST happen after all the other drawing commands.
