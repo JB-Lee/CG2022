@@ -5,7 +5,7 @@ Modified on Feb 20 2020
 
 import itertools
 import functools
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 import pygame
@@ -45,6 +45,12 @@ class RectManager:
         self.drag_offset = (0, 0)
         self.indexing = -1
 
+    def get_colide_rect(self, pos:Tuple[int, int]) -> Tuple[int, Optional[pygame.rect.Rect]]:
+        for idx, rect in enumerate(self.rectangles):
+            if rect.collidepoint(pos):
+                return idx, rect
+        else:
+            return -1, None
 
 # screen.blit(background, (0,0))
 screen.fill(WHITE)
@@ -191,11 +197,12 @@ def main():
     rm = RectManager()
 
     def handle_left_mouse_down(event):
-        for idx, rect in enumerate(rm.rectangles):
-            if rect.collidepoint(event.pos):
-                rm.rect_dragging = idx
-                rm.drag_offset = (rect.x - event.pos[0], rect.y - event.pos[1])
-                break
+        idx, rect = rm.get_colide_rect(event.pos)
+
+        if idx > -1:
+            rm.rect_dragging = idx
+            rm.drag_offset = (rect.x - event.pos[0], rect.y - event.pos[1])
+
         else:
             if len(rm.rectangles) >= 4:
                 return
@@ -210,12 +217,8 @@ def main():
         rm.rectangles.clear()
 
     def handle_mouse_motion(event):
-        for idx, rect in enumerate(rm.rectangles):
-            if rect.collidepoint(event.pos):
-                rm.indexing = idx
-                break
-        else:
-            rm.indexing = -1
+        idx, _ = rm.get_colide_rect(event.pos)
+        rm.indexing = idx
 
         if rm.rect_dragging >= 0:
             rm.rectangles[rm.rect_dragging].x = event.pos[0] + rm.drag_offset[0]
