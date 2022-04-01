@@ -5,7 +5,8 @@ Modified on Feb 20 2020
 
 import itertools
 import functools
-from typing import List, Tuple, Optional
+import time
+from typing import List, Tuple, Optional, Any, Iterable
 
 import numpy as np
 import pygame
@@ -184,6 +185,74 @@ def draw_cubic_bezier(points, color=BLUE, steps=100, thick=3):
         pygame.draw.line(screen, color, (ox, oy), (x, y), thick)
         ox, oy = x, y
 
+@functools.lru_cache()
+def calc_next_coefficients(values: Tuple[int]) -> Tuple[int]:
+    result = [1]
+    for i in range(len(values) - 1):
+        result += [values[i] + values[i + 1]]
+    result += [1]
+    return tuple(result)
+
+@functools.lru_cache()
+def calc_coefficients(degree: int) -> Tuple[int]:
+    if degree == 0: return (1, )
+
+    result = calc_next_coefficients(calc_coefficients(degree - 1))
+    return result
+
+@functools.lru_cache()
+def bezier_polylines(points: Iterable[Tuple[int, int]], steps: int) -> List[Tuple[int, int]]:
+    result = []
+
+    point_cnt = len(points)
+
+    for t in np.arange(0, 1, 1 / steps):
+        x, y = 0, 0
+
+        for i, coef in zip(range(point_cnt), calc_coefficients(point_cnt-1)):
+            x += points[i][0] * coef * (t ** i) * (1 - t) ** (point_cnt - 1 - i)
+            y += points[i][1] * coef * (t ** i) * (1 - t) ** (point_cnt - 1 - i)
+
+        result += [(x, y)]
+    
+    return result
+
+def draw_generalize_bezier_v2(points, color=BLUE, steps=100, thick=3):
+    """
+    Draw Generalize Bezier Curve
+    """
+
+    ox, oy = points[0]
+
+    for x, y in bezier_polylines(points, steps):
+        pygame.draw.line(screen, color, (ox, oy), (x, y), thick)
+        ox, oy = x, y
+
+def draw_generalize_bezier(points, color=BLUE, steps=100, thick=3):
+    """
+    Draw Generalize Bezier Curve
+    """
+
+    point_cnt = len(points)
+
+    ox, oy = points[0]
+
+    for t in np.arange(0, 1, 1 / steps):
+        x, y = 0, 0
+
+        for i, coef in zip(range(point_cnt), calc_coefficients(point_cnt-1)):
+            x += points[i][0] * coef * (t ** i) * (1 - t) ** (point_cnt - 1 - i)
+            y += points[i][1] * coef * (t ** i) * (1 - t) ** (point_cnt - 1 - i)
+
+        pygame.draw.line(screen, color, (ox, oy), (x, y), thick)
+        ox, oy = x, y
+
+def time_it(fn, *args, **kwargs) -> Tuple[float, Optional[Any]]:
+    start = time.time()
+    result = fn(*args, **kwargs)
+    end = time.time()
+
+    return (end-start) * 1000, result
 
 ###################################################################
 # HW 5 END
@@ -204,8 +273,7 @@ def main():
             rm.drag_offset = (rect.x - event.pos[0], rect.y - event.pos[1])
 
         else:
-            if len(rm.rectangles) >= 4:
-                return
+            # if len(rm.rectangles) >= 4: return
 
             rm.rectangles.append(
                 pygame.rect.Rect((event.pos[0] - margin, event.pos[1] - margin, 2 * margin, 2 * margin)))
@@ -258,14 +326,17 @@ def main():
             if i > 0:
                 pygame.draw.line(screen, GREEN, rm.rectangles[i - 1].center, rm.rectangles[i].center, 2)
 
-        pygame.draw.rect(screen, (170, 170, 170), (0, 0, 300, 75))
+        pygame.draw.rect(screen, (170, 170, 170), (0, 0, 300, 95))
         draw_text(f'Points : {len(rm.rectangles)}', RED, (10, 10))
         draw_text(f'mouse x:{mouse_x} y:{mouse_y}', RED, (10, 30))
         draw_text(f'FPS :{clock.get_fps():.2f} index :{rm.indexing}', RED, (10, 50))
 
-        if len(rm.rectangles) >= 4:
-            # draw_cubic_bezier([rect.center for rect in rm.rectangles], steps=50000)
-            draw_cubic_bezier_vectorize([rect.center for rect in rm.rectangles], steps=5000)
+        if len(rm.rectangles) >= 2:
+            # calc_time, _ = time_it(draw_cubic_bezier, tuple(rect.center for rect in rm.rectangles), steps=500)
+            # calc_time, _ = time_it(draw_cubic_bezier_vectorize, tuple(rect.center for rect in rm.rectangles), steps=500)
+            calc_time, _ = time_it(draw_generalize_bezier_v2, tuple(rect.center for rect in rm.rectangles), steps=500)
+            draw_text(f'draw_time :{calc_time:.2f} ms', RED, (10, 70))
+            
 
         # Go ahead and update the screen with what we've drawn.
         # This MUST happen after all the other drawing commands.
